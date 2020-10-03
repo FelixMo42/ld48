@@ -33,12 +33,12 @@ function create () {
     player = this.physics.add.sprite(500, 100, 'dog')
     player.displayWidth = 200
     player.scaleY = player.scaleX
-    player.setGravity(0, 500)
+    player.setGravity(0, 2000)
 
 
     things = this.physics.add.group()
 
-    let enemy = things.create(700, 300, "blue").setScale(0.1)
+    let enemy = things.create(1000, 300, "blue").setScale(0.1)
     enemy.setVelocityX(-200)
 
 
@@ -47,14 +47,18 @@ function create () {
 
     // make the ground
     platforms.create(0, window.innerHeight-50, 'ground').setScale(window.innerWidth).setOrigin(0).refreshBody()
-    platforms.create(350, window.innerHeight / 2, 'ground').setScale(300, 12).setOrigin(0).refreshBody()
+
+    platforms.create(350, window.innerHeight / 2 + 100, 'ground').setScale(300, 12).setOrigin(0).refreshBody()
+
 
     // make the player collide with the platforms
-    this.physics.add.collider(player, platforms)
+    this.physics.add.collider(player, platforms, null, (player, platform) => {
+        return player.body.velocity.y > 0
+    })
 
     this.physics.add.collider(player, things, (player, thing) => {
         thing.destroy()
-    });
+    })
 
 
     // add bindings for the keys in the game
@@ -68,13 +72,13 @@ function create () {
 
 function update() {   
     if (inputs.jump.isDown && player.body.touching.down) {
-        player.setVelocityY(-600)
+        player.setVelocityY(-1500)
     }
 
     if (inputs.foward.isDown) {
-        player.setVelocityX(160)
+        player.setVelocityX(210)
     } else if (inputs.backup.isDown) {
-        player.setVelocityX(-160)
+        player.setVelocityX(-210)
     } else {
         player.setVelocityX(0)
     }
