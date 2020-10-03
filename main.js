@@ -21,12 +21,20 @@ const world_length = 2000;
 let player;
 let inputs;
 let things;
+let enemys;
+
+function getTime() {
+    return (new Date()).getTime()
+}
+
+let startTime = getTime()
 
 function preload() {
     // load in all my beatifull art
     this.load.image("dog", "assets/dog.png")
     this.load.image("ground", "assets/ground.png")
     this.load.image("blue", "assets/blue.png")
+    this.load.image("rock", "assets/rock.png")
 }
 
 function create () {
@@ -35,12 +43,12 @@ function create () {
     player.scaleY = player.scaleX
     player.setGravity(0, 2000)
 
-
     things = this.physics.add.group()
+    enemys = this.physics.add.group()
 
-    let enemy = things.create(1000, 300, "blue").setScale(0.1)
-    enemy.setVelocityX(-200)
+    // enemys
 
+    enemys.create(1000, window.innerHeight/2 - 50, "blue").setScale(0.1)
 
     // create a group for the platforms and ground
     platforms = this.physics.add.staticGroup()
@@ -61,9 +69,20 @@ function create () {
         return player.body.velocity.y >= 0
     })
 
-    this.physics.add.collider(player, things, (_player, thing) => {
-        thing.destroy()
+    this.physics.add.collider(player, enemys, (_player, enemy) => {
+        console.log("blabalbal")
+
+        let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0)
+
+        rock.displayWidth = enemy.displayWidth
+        rock.scaleY = rock.scaleX
+        rock.body.immovable = true
+
+        enemy.destroy()
     })
+
+
+    this.physics.add.collider(player, things)
 
 
     // add bindings for the keys in the game
@@ -75,22 +94,34 @@ function create () {
     }
 }
 
-function update() {   
+function update() {
+    // update the velocity of the obsticles
+    things.setVelocityX( -((getTime() - startTime) / 100 + 200) )
+
+    // make the player jump
     if (inputs.jump.isDown && player.body.touching.down) {
         player.setVelocityY(-1000)
     }
 
+    // move forward and backwords
     if (inputs.foward.isDown) {
-        player.setVelocityX(400)
+        player.setVelocityX( 400 )
     } else if (inputs.backup.isDown) {
-        player.setVelocityX(-400)
+        player.setVelocityX( -400 )
     } else {
         player.setVelocityX(0)
     }
 
+    // see if anything needs to be looped
     for (let thing of things.getChildren()) {
         if (thing.body.x + thing.body.width < 0) {
             thing.setPosition(world_length + thing.body.x, thing.body.y)
+        }
+    }
+
+    for (let enemy of enemys.getChildren()) {
+        if (enemy.body.x + enemy.body.width < 0) {
+            enemy.setPosition(world_length + enemy.body.x, enemy.body.y)
         }
     }
 }
