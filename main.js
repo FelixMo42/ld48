@@ -37,6 +37,19 @@ function preload() {
     this.load.image("rock", "assets/rock.png")
 }
 
+function spawnEnemy(x, y) {
+    enemys.create(window.innerWidth + 100 + x, window.innerHeight/2 - y, "blue").setScale(0.1)
+}
+
+function spawnWave() {
+    for (let i = 0; i < 5; i++) {
+        spawnEnemy(
+            200 * i ,
+            - i * 150 + 300
+        )
+    }
+}
+
 function create () {
     player = this.physics.add.sprite(500, 100, 'dog')
     player.displayWidth = 200
@@ -46,8 +59,7 @@ function create () {
     things = this.physics.add.group()
     enemys = this.physics.add.group()
 
-    // enemys
-    enemys.create(1000, window.innerHeight/2 - 50, "blue").setScale(0.1)
+    spawnWave()
 
     // create a group for the platforms and ground
     platforms = this.physics.add.staticGroup()
@@ -55,13 +67,13 @@ function create () {
     // make the ground
     platforms.create(0, window.innerHeight-50, 'ground').setScale(window.innerWidth).setOrigin(0).refreshBody()
 
+    // make all the  four platforms
     let center = 450
     let width  = 300
     platforms.create(center, window.innerHeight / 2 + 200, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
     platforms.create(center, window.innerHeight / 2 - 200, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
     platforms.create(center + 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
     platforms.create(center - 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
-
 
     // make the player collide with the platforms, but only when falling
     this.physics.add.collider(player, platforms, null, (player, platform) => {
@@ -80,9 +92,7 @@ function create () {
         enemy.destroy()
     })
 
-
     this.physics.add.collider(player, things)
-
 
     // add bindings for the keys in the game
     inputs = {
