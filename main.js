@@ -48,15 +48,20 @@ function create () {
     // make the ground
     platforms.create(0, window.innerHeight-50, 'ground').setScale(window.innerWidth).setOrigin(0).refreshBody()
 
-    platforms.create(350, window.innerHeight / 2 + 100, 'ground').setScale(300, 12).setOrigin(0).refreshBody()
+    let center = 450
+    let width  = 300
+    platforms.create(center, window.innerHeight / 2 + 200, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
+    platforms.create(center, window.innerHeight / 2 - 200, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
+    platforms.create(center + 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
+    platforms.create(center - 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
 
 
-    // make the player collide with the platforms
-    this.physics.add.collider(player, platforms, null, (player, platform) => {
-        return player.body.velocity.y > 0
+    // make the player collide with the platforms, but only when falling
+    this.physics.add.collider(player, platforms, null, player => {
+        return player.body.velocity.y >= 0
     })
 
-    this.physics.add.collider(player, things, (player, thing) => {
+    this.physics.add.collider(player, things, (_player, thing) => {
         thing.destroy()
     })
 
@@ -72,13 +77,13 @@ function create () {
 
 function update() {   
     if (inputs.jump.isDown && player.body.touching.down) {
-        player.setVelocityY(-1500)
+        player.setVelocityY(-1000)
     }
 
     if (inputs.foward.isDown) {
-        player.setVelocityX(210)
+        player.setVelocityX(400)
     } else if (inputs.backup.isDown) {
-        player.setVelocityX(-210)
+        player.setVelocityX(-400)
     } else {
         player.setVelocityX(0)
     }
