@@ -16,7 +16,7 @@ const game = new Phaser.Game({
     }
 })
 
-const world_length = window.innerWidth + 300;
+const world_length = 2500;
 
 let text;
 let say;
@@ -64,7 +64,7 @@ function spawnEnemy(x, y) {
     enemy.scaleY = enemy.scaleX    
 
     enemy.getVel = (time) => {
-        return Math.sin(time/1000+100) * 150
+        return Math.sin(time/1000+100) * 100
     }
 }
 
@@ -98,6 +98,10 @@ function killEnemy(enemy) {
 
     // destroy the enemy
     enemy.destroy()
+
+    if ( totalKills == 10 ) {
+        window.location.href = "./win.html"
+    }
 }
 
 function addBoat() {
@@ -235,10 +239,10 @@ function update() {
 
 function game_update() {
     // get the current time (in ms)
-    let time = getTime() - startTime
+    let time = 0 //getTime() - startTime
 
     if (mode == SPAWNING) {
-        if ( time >= modeTimer ) {
+        if ( getTime() - startTime >= modeTimer ) {
             spawnWave()
             mode = COMBAT
         }
@@ -247,14 +251,15 @@ function game_update() {
     if (mode == COMBAT) {
         if ( enemysLeft == 0  ) {
             mode = SPAWNING
-            modeTimer = time + 1000
+            modeTimer = getTime() - startTime + 1000
         }
     }
 
     // update the velocity of the obsticles
-    things.setVelocityX( -time / 100 - 200 )
+    things.setVelocityX( -time / 100 - 250 )
     water1.setVelocityX( -time / 100 - 200 )
     water2.setVelocityX( -time / 100 - 250 )
+    enemys.setVelocityX( -time / 100 - 350 )
 
     // make the player jump
     if (inputs.jump.isDown && player.body.touching.down) {
@@ -273,16 +278,31 @@ function game_update() {
     // loop anything needs to be
     loop(things)
     loop(enemys, () => {
+        // we lost a crew member
         lives -= 1
+
+        // tell the player who died
+        say.setText([
+            `They killed ${crew.pop()}.`
+        ])
+
+        
+        // is we have no crew, then the game is over
+        if (!gameOver && !lives) {
+            window.location.href = "./dead.html"
+            gameOver = true
+        }
+
+        // remove the text
+        setTimeout(() => {
+            say.setText([""])
+        }, 3000)
     })
     waters_loop(water1)
     waters_loop(water2)
 
-    let velocity = -time / 100 - 300
-    for (let enemy of enemys.getChildren()) {
-        enemy.setVelocityX(-time / 100 - 300)
-        enemy.setVelocityY(enemy.getVel(time))
-    }
+
+    for (let enemy of enemys.getChildren()) enemy.setVelocityY(enemy.getVel(getTime() - startTime))
 
     // see if you are dead
     if ( !gameOver && player.body.y > window.innerHeight ) {
