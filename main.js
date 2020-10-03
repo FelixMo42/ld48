@@ -45,18 +45,23 @@ function preload() {
     // load in all my beatifull art
     this.load.image("dog", "assets/dog.png")
     this.load.image("ground", "assets/ground.png")
-    this.load.image("blue", "assets/blue.png")
+    this.load.image("blue", "assets/whale.png")
     this.load.image("rock", "assets/rock.png")
+    this.load.image("boat", "assets/boat.png")
+    this.load.image("ocean", "assets/ocean.png")
 }
 
 function spawnEnemy(x, y) {
-    enemys.create(window.innerWidth + 100 + x, window.innerHeight / 2 - y, "blue").setScale(0.1)
+    let enemy = enemys.create(window.innerWidth + 100 + x, window.innerHeight / 2 - y, "blue")
+
+    enemy.displayWidth = 100
+    enemy.scaleY = enemy.scaleX    
 }
 
 function spawnWave() {
     for (let i = 0; i < 5; i++) {
         spawnEnemy(
-            200 * i ,
+            1000 - 300 * i ,
             - i * 150 + 300
         )
     }
@@ -83,19 +88,7 @@ function killEnemy(enemy) {
     enemy.destroy()
 }
 
-function create () {
-    // spawn the player
-    player = this.physics.add.sprite(500, 100, 'dog')
-    player.displayWidth = 200
-    player.scaleY = player.scaleX
-    player.setGravity(0, 2000)
-
-    things = this.physics.add.group()
-    enemys = this.physics.add.group()
-
-    // a text object to display game info
-    text = this.add.text(0, 0, 'There has been an ERROR!', { fill: '#00ff00' })
-
+function addBoat() {
     // create a group for the platforms and ground
     platforms = this.physics.add.staticGroup()
 
@@ -107,15 +100,35 @@ function create () {
     platforms.create(center + 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
     platforms.create(center - 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
 
+    // draw the boat
+    this.add.image(center + 150, window.innerHeight / 2, 'boat')
+}
+
+function create () {
+    this.cameras.main.backgroundColor.setTo(178,255,255)
+
+    this.add.image(0, window.innerHeight / 2 - 80, 'ocean').setOrigin(0)
+    addBoat.call(this)
+    this.add.image(-200, window.innerHeight / 2 + 80, 'ocean').setOrigin(0)
+
+    // spawn the player
+    player = this.physics.add.sprite(500, 100, 'dog')
+    player.displayWidth = 200
+    player.scaleY = player.scaleX
+    player.setGravity(0, 2000)
+
+    // spawn some groups
+    things = this.physics.add.group()
+    enemys = this.physics.add.group()
+
+    // a text object to display game info
+    text = this.add.text(0, 0, 'There has been an ERROR!', { fill: '#000000' })
+
     // make the player collide with the platforms, but only when falling
     this.physics.add.collider(player, platforms, null, (player, _platform) => {
         return player.body.velocity.y >= 0
     })
-
-    // && player.body.y + player.body.height - 11 < platform.body.y
-
     this.physics.add.collider(player, enemys, (_player, enemy) => killEnemy(enemy))
-
     this.physics.add.collider(player, things)
 
     // add bindings for the keys in the game
@@ -124,6 +137,14 @@ function create () {
 
         backup : this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
         foward : this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+    }
+}
+
+function loop(group) {
+    for (let thing of group.getChildren()) {
+        if (thing.body.x + thing.body.width < -100) {
+            thing.setPosition(world_length + thing.body.x, thing.body.y)
+        }
     }
 }
 
@@ -163,24 +184,12 @@ function update() {
         player.setVelocityX(0)
     }
 
-    // see if anything needs to be looped
-    for (let thing of things.getChildren()) {
-        if (thing.body.x + thing.body.width < 0) {
-            thing.setPosition(world_length + thing.body.x, thing.body.y)
-        }
-    }
-
-    for (let enemy of enemys.getChildren()) {
-        if (enemy.body.x + enemy.body.width < 0) {
-            enemy.setPosition(world_length + enemy.body.x, enemy.body.y)
-        }
-    }
+    // loop anything needs to be
+    loop(things)
+    loop(enemys)
 
     // see if you are dead
-    if ( !gameOver && (
-        player.body.y > window.innerHeight || 
-        player.body.x + player.body.width < 0
-    ) ) {
+    if ( !gameOver && player.body.y > window.innerHeight ) {
         window.location.href = "./dead.html"
         gameOver = true
     }
