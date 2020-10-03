@@ -16,9 +16,10 @@ const game = new Phaser.Game({
     }
 })
 
-const world_length = 5000;
+const world_length = window.innerWidth + 300;
 
 let text;
+let say;
 let player;
 let inputs;
 let things;
@@ -34,12 +35,17 @@ let modeTimer = 1000
 
 let totalKills = 0
 let enemysLeft = 0
+let lives = 8
 
 function getTime() {
     return (new Date()).getTime()
 }
 
 let startTime = getTime()
+
+function clamp(n, min, max) {
+    return Math.min(Math.max(n, min), max)
+}
 
 function preload() {
     // load in all my beatifull art
@@ -56,17 +62,23 @@ function spawnEnemy(x, y) {
 
     enemy.displayWidth = 100
     enemy.scaleY = enemy.scaleX    
+
+    enemy.getVel = (time) => {
+        return Math.sin(time/1000+100) * 150
+    }
 }
 
 function spawnWave() {
-    for (let i = 0; i < 5; i++) {
+    let number = 1
+
+    for (let i = 0; i < number; i++) {
         spawnEnemy(
             1000 - 300 * i ,
-            - i * 150 + 300
+            (2 * Math.random() - 1) * 300 + 100
         )
     }
 
-    enemysLeft += 5
+    enemysLeft += number
 }
 
 function killEnemy(enemy) {
@@ -107,12 +119,10 @@ function addBoat() {
 function create () {
     this.cameras.main.backgroundColor.setTo(178,255,255)
 
-    water1 = this.physics.add.group()
-    water2 = this.physics.add.group()
-
     let offset = 2216
 
     // create the water behind the boat
+    water1 = this.physics.add.group()
     water1.create(0, window.innerHeight / 2 - 80, 'ocean').setOrigin(0)
     water1.create(0 + offset, window.innerHeight / 2 - 80, 'ocean').setOrigin(0)
     
@@ -120,6 +130,7 @@ function create () {
     addBoat.call(this)
 
     // create the water in front of the boat
+    water2 = this.physics.add.group()
     water2.create(-200, window.innerHeight / 2 + 80, 'ocean').setOrigin(0)
     water2.create(-200 + offset, window.innerHeight / 2 + 80, 'ocean').setOrigin(0)
 
@@ -135,6 +146,7 @@ function create () {
 
     // a text object to display game info
     text = this.add.text(0, 0, 'There has been an ERROR!', { fill: '#000000' })
+    say = this.add.text(20, window.innerHeight - 100, '', { fontFamily: "Arial", fill: '#000000', fontSize: 40, strokeThickness: 0 })
 
     // make the player collide with the platforms, but only when falling
     this.physics.add.collider(player, platforms, null, (player, _platform) => {
@@ -150,12 +162,33 @@ function create () {
         backup : this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
         foward : this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
     }
+
+    let t = 3000
+    say.setText([
+        "We got stuck in a whirlpool!"
+    ])
+    setTimeout(() => {
+        say.setText([
+            "We need more fuel to escape!"
+        ])
+        setTimeout(() => {
+            say.setText([
+                "About ten whales worth of bluber should be enoght."
+            ])
+            setTimeout(() => {
+                say.setText([
+                    ""
+                ])
+            }, t)
+        }, t)
+    }, t)
 }
 
-function loop(group) {
+function loop(group, func=()=>{}) {
     for (let thing of group.getChildren()) {
         if (thing.body.x + thing.body.width < 0) {
             thing.setPosition(world_length + thing.body.x, thing.body.y)
+            func()
         }
     }
 }
@@ -176,7 +209,31 @@ function waters_loop(waters) {
     water_loop(w2, w1)
 }
 
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+
+let crew = shuffle([
+    "Addision",
+    "Parker",
+    "Malika",
+    "Miles",
+    "Ben",
+    "Jonah",
+    "Eli",
+    "Felix"
+])
+
 function update() {
+    game_update()
+}
+
+function game_update() {
     // get the current time (in ms)
     let time = getTime() - startTime
 
@@ -198,7 +255,6 @@ function update() {
     things.setVelocityX( -time / 100 - 200 )
     water1.setVelocityX( -time / 100 - 200 )
     water2.setVelocityX( -time / 100 - 250 )
-    enemys.setVelocityX( -time / 100 - 300 )
 
     // make the player jump
     if (inputs.jump.isDown && player.body.touching.down) {
@@ -216,9 +272,17 @@ function update() {
 
     // loop anything needs to be
     loop(things)
-    loop(enemys)
+    loop(enemys, () => {
+        lives -= 1
+    })
     waters_loop(water1)
     waters_loop(water2)
+
+    let velocity = -time / 100 - 300
+    for (let enemy of enemys.getChildren()) {
+        enemy.setVelocityX(-time / 100 - 300)
+        enemy.setVelocityY(enemy.getVel(time))
+    }
 
     // see if you are dead
     if ( !gameOver && player.body.y > window.innerHeight ) {
@@ -228,7 +292,7 @@ function update() {
 
     // update the text
     text.setText([
+        'Lives: ' + lives,
         'Kills: ' + totalKills,
-        'Time: ' + time / 1000,
     ])
 }
