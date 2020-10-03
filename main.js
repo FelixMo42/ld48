@@ -16,15 +16,24 @@ const game = new Phaser.Game({
     }
 })
 
-const world_length = 2000;
+const world_length = 5000;
 
+let text;
 let player;
 let inputs;
 let things;
 let enemys;
 
-let gameOver = false;
+let gameOver = false
 
+let SPAWNING = 0
+let COMBAT = 1
+
+let mode = SPAWNING
+let modeTimer = 1000
+
+let totalKills = 0
+let enemysLeft = 0
 
 function getTime() {
     return (new Date()).getTime()
@@ -41,7 +50,7 @@ function preload() {
 }
 
 function spawnEnemy(x, y) {
-    enemys.create(window.innerWidth + 100 + x, window.innerHeight/2 - y, "blue").setScale(0.1)
+    enemys.create(window.innerWidth + 100 + x, window.innerHeight / 2 - y, "blue").setScale(0.1)
 }
 
 function spawnWave() {
@@ -51,9 +60,31 @@ function spawnWave() {
             - i * 150 + 300
         )
     }
+
+    enemysLeft += 5
+}
+
+function killEnemy(enemy) {
+    // decremnet the amount of enemeys on screen at the moment
+    enemysLeft -= 1
+
+    // incrament the kill counter
+    totalKills += 1
+
+    // spawn a rock in the right place
+    let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0)
+
+    // scale the rock correctly
+    rock.displayWidth = enemy.displayWidth
+    rock.scaleY = rock.scaleX
+    rock.body.immovable = true
+
+    // destroy the enemy
+    enemy.destroy()
 }
 
 function create () {
+    // spawn the player
     player = this.physics.add.sprite(500, 100, 'dog')
     player.displayWidth = 200
     player.scaleY = player.scaleX
@@ -62,7 +93,8 @@ function create () {
     things = this.physics.add.group()
     enemys = this.physics.add.group()
 
-    spawnWave()
+    // a text object to display game info
+    text = this.add.text(0, 0, 'There has been an ERROR!', { fill: '#00ff00' })
 
     // create a group for the platforms and ground
     platforms = this.physics.add.staticGroup()
@@ -76,21 +108,13 @@ function create () {
     platforms.create(center - 300, window.innerHeight / 2, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
 
     // make the player collide with the platforms, but only when falling
-    this.physics.add.collider(player, platforms, null, (player, platform) => {
+    this.physics.add.collider(player, platforms, null, (player, _platform) => {
         return player.body.velocity.y >= 0
     })
 
     // && player.body.y + player.body.height - 11 < platform.body.y
 
-    this.physics.add.collider(player, enemys, (_player, enemy) => {
-        let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0)
-
-        rock.displayWidth = enemy.displayWidth
-        rock.scaleY = rock.scaleX
-        rock.body.immovable = true
-
-        enemy.destroy()
-    })
+    this.physics.add.collider(player, enemys, (_player, enemy) => killEnemy(enemy))
 
     this.physics.add.collider(player, things)
 
@@ -104,9 +128,26 @@ function create () {
 }
 
 function update() {
+    // get the current time (in ms)
+    let time = getTime() - startTime
+
+    if (mode == SPAWNING) {
+        if ( time >= modeTimer ) {
+            spawnWave()
+            mode = COMBAT
+        }
+    }
+
+    if (mode == COMBAT) {
+        if ( enemysLeft == 0  ) {
+            mode = SPAWNING
+            modeTimer = time + 1000
+        }
+    }
+
     // update the velocity of the obsticles
-    things.setVelocityX( -((getTime() - startTime) / 100 + 200) )
-    enemys.setVelocityX( -((getTime() - startTime) / 100 + 300) )
+    things.setVelocityX( -time / 100 - 200 )
+    enemys.setVelocityX( -time / 100 - 300 )
 
     // make the player jump
     if (inputs.jump.isDown && player.body.touching.down) {
@@ -140,8 +181,13 @@ function update() {
         player.body.y > window.innerHeight || 
         player.body.x + player.body.width < 0
     ) ) {
-        console.log("hi")
-        window.location.href = "/dead.html"
+        window.location.href = "./dead.html"
         gameOver = true
     }
+
+    // update the text
+    text.setText([
+        'Kills: ' + totalKills,
+        'Time: ' + time / 1000,
+    ])
 }
