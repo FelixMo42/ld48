@@ -23,6 +23,9 @@ let inputs;
 let things;
 let enemys;
 
+let gameOver = false;
+
+
 function getTime() {
     return (new Date()).getTime()
 }
@@ -64,10 +67,7 @@ function create () {
     // create a group for the platforms and ground
     platforms = this.physics.add.staticGroup()
 
-    // make the ground
-    platforms.create(0, window.innerHeight-50, 'ground').setScale(window.innerWidth).setOrigin(0).refreshBody()
-
-    // make all the  four platforms
+    // make the four platforms
     let center = 450
     let width  = 300
     platforms.create(center, window.innerHeight / 2 + 200, 'ground').setScale(width, 12).setOrigin(0).refreshBody()
@@ -133,5 +133,15 @@ function update() {
         if (enemy.body.x + enemy.body.width < 0) {
             enemy.setPosition(world_length + enemy.body.x, enemy.body.y)
         }
+    }
+
+    // see if you are dead
+    if ( !gameOver && (
+        player.body.y > window.innerHeight || 
+        player.body.x + player.body.width < 0
+    ) ) {
+        console.log("hi")
+        window.location.href = "/dead.html"
+        gameOver = true
     }
 }
