@@ -47,7 +47,6 @@ function create () {
     enemys = this.physics.add.group()
 
     // enemys
-
     enemys.create(1000, window.innerHeight/2 - 50, "blue").setScale(0.1)
 
     // create a group for the platforms and ground
@@ -65,13 +64,11 @@ function create () {
 
 
     // make the player collide with the platforms, but only when falling
-    this.physics.add.collider(player, platforms, null, player => {
-        return player.body.velocity.y >= 0
+    this.physics.add.collider(player, platforms, null, (player, platform) => {
+        return player.body.velocity.y >= 0 && player.body.y + player.body.height - 11 < platform.body.y
     })
 
     this.physics.add.collider(player, enemys, (_player, enemy) => {
-        console.log("blabalbal")
-
         let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0)
 
         rock.displayWidth = enemy.displayWidth
@@ -97,6 +94,7 @@ function create () {
 function update() {
     // update the velocity of the obsticles
     things.setVelocityX( -((getTime() - startTime) / 100 + 200) )
+    enemys.setVelocityX( -((getTime() - startTime) / 100 + 300) )
 
     // make the player jump
     if (inputs.jump.isDown && player.body.touching.down) {
