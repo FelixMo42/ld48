@@ -65,8 +65,10 @@ function create () {
 
     // make the player collide with the platforms, but only when falling
     this.physics.add.collider(player, platforms, null, (player, platform) => {
-        return player.body.velocity.y >= 0 && player.body.y + player.body.height - 11 < platform.body.y
+        return player.body.velocity.y >= 0
     })
+
+    // && player.body.y + player.body.height - 11 < platform.body.y
 
     this.physics.add.collider(player, enemys, (_player, enemy) => {
         let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0)
