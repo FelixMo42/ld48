@@ -19,7 +19,6 @@ const game = new Phaser.Game({
 const world_length = 2500;
 
 let text;
-let say;
 let player;
 let inputs;
 let things;
@@ -36,6 +35,66 @@ let modeTimer = 1000
 let totalKills = 0
 let enemysLeft = 0
 let lives = 8
+
+
+function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+
+let crew = shuffle([
+    "Addison",
+    "Parker",
+    "Mallika",
+    "Miles",
+    "Ben",
+    "Jonah",
+    "Eli",
+    "Felix"
+])
+
+
+let face;
+let diag_box;
+let say;
+let diag_scene;
+let diag_size = 140
+
+function talk(person, text) {
+    face = diag_scene.add.image(0, window.innerHeight - diag_size, person).setOrigin(0)
+    face.displayWidth = diag_size
+    face.displayHeight = diag_size
+    diag_box.setVisible(true)
+    say.setText(text)
+}
+
+function talk_hide() {
+    face.destroy()
+    diag_box.setVisible(false)
+    say.setText("")
+}
+
+
+function setUpDialogeBox() {
+    diag_scene = this
+    diag_box = this.add.image(diag_size, window.innerHeight - diag_size, 'white').setOrigin(0).setScale(window.innerWidth - diag_size, diag_size).setVisible(false)
+    say = this.add.text(diag_size + 20, window.innerHeight - 90, '', { fontFamily: "Arial", fill: '#000000', fontSize: 40, strokeThickness: 0 })
+}
+
+
+
+
+
+
+
+
+
+
+
 
 function getTime() {
     return (new Date()).getTime()
@@ -55,17 +114,19 @@ function preload() {
     this.load.image("rock", "assets/rock.png")
     this.load.image("boat", "assets/boat.png")
     this.load.image("ocean", "assets/ocean.png")
+    this.load.image("white", "assets/white.png")
+
+    // load in friends
+    for (let person of crew) {
+        this.load.image(person, `assets/${person.toLowerCase()}.png`)
+    }
 }
 
 function spawnEnemy(x, y) {
-    let enemy = enemys.create(window.innerWidth + 100 + x, window.innerHeight / 2 - y, "blue")
+    let enemy = enemys.create(window.innerWidth + 100 + x, window.innerHeight / 2 - y, "blue").setVelocityX( -250 )
 
     enemy.displayWidth = 100
-    enemy.scaleY = enemy.scaleX    
-
-    enemy.getVel = (time) => {
-        return Math.sin(time/1000+100) * 100
-    }
+    enemy.scaleY = enemy.scaleX
 }
 
 function spawnWave() {
@@ -89,7 +150,7 @@ function killEnemy(enemy) {
     totalKills += 1
 
     // spawn a rock in the right place
-    let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0)
+    let rock = things.create( enemy.body.x , enemy.body.y , "rock" ).setOrigin(0).setVelocityX( -250 )
 
     // scale the rock correctly
     rock.displayWidth = enemy.displayWidth
@@ -150,7 +211,8 @@ function create () {
 
     // a text object to display game info
     text = this.add.text(0, 0, 'There has been an ERROR!', { fill: '#000000' })
-    say = this.add.text(20, window.innerHeight - 100, '', { fontFamily: "Arial", fill: '#000000', fontSize: 40, strokeThickness: 0 })
+
+    setUpDialogeBox.call(this)
 
     // make the player collide with the platforms, but only when falling
     this.physics.add.collider(player, platforms, null, (player, _platform) => {
@@ -168,24 +230,18 @@ function create () {
     }
 
     let t = 3000
-    say.setText([
-        "We got stuck in a whirlpool!"
-    ])
+    talk("Miles", "We got stuck in a whirlepool!")
     setTimeout(() => {
-        say.setText([
-            "We need more fuel to escape!"
-        ])
+        talk("Eli", "We need more fuel to escape!")
         setTimeout(() => {
-            say.setText([
-                "About ten whales worth of bluber should be enoght."
-            ])
-            setTimeout(() => {
-                say.setText([
-                    ""
-                ])
-            }, t)
+            talk("Eli", "About ten whales worth of bluber should be enoght.")
         }, t)
     }, t)
+
+
+    // set the velocity of the obsticles
+    water1.setVelocityX( -200 )
+    water2.setVelocityX( -250 )
 }
 
 function loop(group, func=()=>{}) {
@@ -213,33 +269,17 @@ function waters_loop(waters) {
     water_loop(w2, w1)
 }
 
-function shuffle(a) {
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
-
-
-let crew = shuffle([
-    "Addision",
-    "Parker",
-    "Malika",
-    "Miles",
-    "Ben",
-    "Jonah",
-    "Eli",
-    "Felix"
-])
-
 function update() {
     game_update()
 }
 
+function random_crew_mate() {
+    return crew[Math.floor(Math.random() * crew.length)]
+}
+
 function game_update() {
     // get the current time (in ms)
-    let time = 0 //getTime() - startTime
+    let time = getTime() - startTime
 
     if (mode == SPAWNING) {
         if ( getTime() - startTime >= modeTimer ) {
@@ -254,12 +294,6 @@ function game_update() {
             modeTimer = getTime() - startTime + 1000
         }
     }
-
-    // update the velocity of the obsticles
-    things.setVelocityX( -time / 100 - 250 )
-    water1.setVelocityX( -time / 100 - 200 )
-    water2.setVelocityX( -time / 100 - 250 )
-    enemys.setVelocityX( -time / 100 - 350 )
 
     // make the player jump
     if (inputs.jump.isDown && player.body.touching.down) {
@@ -282,9 +316,8 @@ function game_update() {
         lives -= 1
 
         // tell the player who died
-        say.setText([
-            `They killed ${crew.pop()}.`
-        ])
+        let dead = crew.pop()
+        talk(random_crew_mate(), `They killed ${dead}!`)
 
         
         // is we have no crew, then the game is over
@@ -292,17 +325,12 @@ function game_update() {
             window.location.href = "./dead.html"
             gameOver = true
         }
-
-        // remove the text
-        setTimeout(() => {
-            say.setText([""])
-        }, 3000)
     })
     waters_loop(water1)
     waters_loop(water2)
 
 
-    for (let enemy of enemys.getChildren()) enemy.setVelocityY(enemy.getVel(getTime() - startTime))
+    for (let enemy of enemys.getChildren()) enemy.setVelocityY(Math.sin(time/1000+100) * 100)
 
     // see if you are dead
     if ( !gameOver && player.body.y > window.innerHeight ) {
@@ -312,7 +340,7 @@ function game_update() {
 
     // update the text
     text.setText([
-        'Lives: ' + lives,
-        'Kills: ' + totalKills,
+        `Lives: ${lives}/8 `,
+        `Kills: ${totalKills}/10`,
     ])
 }
